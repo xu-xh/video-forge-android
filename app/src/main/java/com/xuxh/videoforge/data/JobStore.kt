@@ -192,3 +192,44 @@ fun VideoJob.toEntity(profile: ProviderProfile): VideoJobEntity = VideoJobEntity
     authPrefix = profile.authPrefix,
     workflowJson = profile.workflowJson,
 )
+
+/** 把领域对象的可变字段盖回既有实体，保留提交时快照的提供商配置。 */
+fun VideoJobEntity.withDomain(domain: VideoJob): VideoJobEntity = VideoJobEntity(
+    id = domain.id,
+    remoteId = domain.remoteId,
+    prompt = domain.prompt,
+    model = domain.model,
+    status = domain.status.toPersistence(),
+    outputUrl = domain.outputUrl,
+    error = domain.error,
+    compatTrace = domain.compatTrace,
+    retryCount = domain.retryCount,
+    lowEndMode = domain.lowEndMode,
+    appliedCompatProfile = domain.appliedCompatProfile,
+    appliedWidth = domain.appliedWidth,
+    appliedHeight = domain.appliedHeight,
+    appliedFps = domain.appliedFps,
+    appliedBitrateKbps = domain.appliedBitrateKbps,
+    profileBaseUrl = profileBaseUrl,
+    adapter = adapter,
+    authHeader = authHeader,
+    authPrefix = authPrefix,
+    workflowJson = workflowJson,
+)
+
+/** 从实体恢复提交时的提供商配置（旧数据 adapter 字段无效时回退 GENERIC_REST）。
+ *  API Key 不落盘，由调用方以当前内存配置注入。 */
+fun VideoJobEntity.toProfile(apiKeyOverride: String = ""): ProviderProfile = ProviderProfile(
+    baseUrl = profileBaseUrl,
+    adapter = runCatching { AdapterType.valueOf(adapter) }.getOrDefault(AdapterType.GENERIC_REST),
+    authHeader = authHeader,
+    authPrefix = authPrefix,
+    workflowJson = workflowJson,
+    apiKey = apiKeyOverride,
+)
+
+/** 是否真实接入：提交时快照的 base URL 非空且非默认占位符。 */
+fun VideoJobEntity.isRealProvider(): Boolean =
+    profileBaseUrl.isNotBlank() &&
+        !profileBaseUrl.startsWith("https://api.example.com") &&
+        !profileBaseUrl.startsWith("http://api.example.com")

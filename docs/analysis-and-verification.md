@@ -178,3 +178,27 @@ README "Known next steps" 列表。README 与最终代码不一致，建议后�
 - 测试报告：`app/build/test-results/testDebugUnitTest/TEST-com.xuxh.videoforge.ui.VideoJobStateMachineTest.xml`
 - 构建产物：`app/build/outputs/apk/debug/app-debug.apk`
 - 证据 JSON：`remote-apk-evidence/remote_evidence_<本次时间戳>.json`
+
+### 8.4 真实网络层开发（v0.2.0，2026-08-26）
+
+针对 §4「文档与实现的差异」（无网络层、无配置界面、无密钥加密），本次按 docs/provider-contract.md 落地真实功能：
+
+| 模块 | 实现 |
+|---|---|
+| 配置 | `data/ProviderSettingsStore.kt`：SharedPreferences 持久化 Profile（适配器/Base URL/Key/鉴权头/模型/workflow JSON） |
+| 加密 | `security/ApiKeyCipher.kt`：AndroidKeyStore AES-GCM（alias `videoforge_api_key`），明文不落盘、不随作业持久化 |
+| 网络 | `net/Http.kt`（HttpURLConnection，无第三方依赖）、`net/RemoteParsers.kt`（纯解析，单测覆盖）、`net/RemoteVideoSource.kt`（GenericRest/ComfyUI 双适配器 + 工厂） |
+| 轮询 | ViewModel `pollRemote()`：真实提交 → 每 1.5s 轮询 → DONE/FAILED，90 次超时保护；`simulate()` 仅在未配置服务时兜底并标注「模拟模式」 |
+| 结果 | 「打开结果」按钮以 ACTION_VIEW 打开输出 URL（显式用户操作） |
+| 版本 | versionCode 2 / versionName 0.2.0 |
+
+验证（2026-08-26）：
+
+- 单测 21 个全绿：RemoteParsersTest(11) + RemoteVideoSourceIntegrationTest(3) + VideoJobStateMachineTest(7)
+  —— 其中集成测试用迷你 HTTP 服务器（ServerSocket）真实跑通 Generic REST 与 ComfyUI 的提交→轮询→完成/失败全链路，并校验鉴权头与 Prompt 注入
+- 离线 clean 重建：`BUILD SUCCESSFUL in 2m 34s`，42 任务全部执行，无警告
+- APK：11,567,092 B，versionCode 2 / versionName 0.2.0；aapt 校验通过
+- dex 校验：`net/*`、`security/ApiKeyCipher`、新的 `ui/CompatProfile` 等类均已打入
+- 发布：GitHub Release v0.2.0（仓库 xu-xh/video-forge-android）
+
+局限（v0.2.0 已知）：ComfyUI 端到端真机验证需用户内网 ComfyUI 实例；workflow 无 text 输入节点时提交会被拒绝并提示；API Key 变更后旧作业按新 Key 轮询（作业不固化 Key，符合不落盘原则）。

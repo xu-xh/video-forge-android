@@ -8,7 +8,7 @@ enum class JobStatus {
     FAILED
 }
 
-enum class AdapterType { OPENAI, OTHER }
+enum class AdapterType { GENERIC_REST, COMFY_UI }
 
 data class ProviderProfile(
     val baseUrl: String,
@@ -16,6 +16,8 @@ data class ProviderProfile(
     val authHeader: String,
     val authPrefix: String,
     val workflowJson: String,
+    /** 仅存在于内存，不随作业持久化；由配置中心在请求时注入。 */
+    val apiKey: String = "",
 )
 
 data class VideoJob(

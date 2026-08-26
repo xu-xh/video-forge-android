@@ -11,13 +11,16 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.xuxh.videoforge.AdapterType
 import com.xuxh.videoforge.JobStatus
 import com.xuxh.videoforge.VideoJob
+import com.xuxh.videoforge.data.ProviderSettings
 import java.util.Locale
 
 @Composable
@@ -28,6 +31,9 @@ fun VideoForgeApp(viewModel: VideoForgeViewModel) {
 
     Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Video Forge", style = MaterialTheme.typography.titleLarge)
+
+        ProviderSettingsPanel(viewModel)
+
         Text("状态: ${viewModel.statusText}")
 
         OutlinedTextField(
@@ -58,14 +64,129 @@ fun VideoForgeApp(viewModel: VideoForgeViewModel) {
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(jobs) { job ->
-                JobItem(job)
+                JobItem(job, onOpen = { viewModel.openResult(job) })
             }
         }
     }
 }
 
 @Composable
-private fun JobItem(job: VideoJob) {
+private fun ProviderSettingsPanel(viewModel: VideoForgeViewModel) {
+    val settings = viewModel.settings
+    var adapter by remember { mutableStateOf(settings.adapter) }
+    var baseUrl by remember { mutableStateOf(settings.baseUrl) }
+    var apiKey by remember { mutableStateOf(settings.apiKey) }
+    var authHeader by remember { mutableStateOf(settings.authHeader) }
+    var authPrefix by remember { mutableStateOf(settings.authPrefix) }
+    var defaultModel by remember { mutableStateOf(settings.defaultModel) }
+    var workflowJson by remember { mutableStateOf(settings.workflowJson) }
+
+    val modeText = if (settings.isConfigured) {
+        "真实接入: ${settings.adapter.name} @ ${settings.baseUrl}"
+    } else {
+        "⚠ 模拟模式（未配置真实服务）"
+    }
+
+    Card(colors = CardDefaults.cardColors(), modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = modeText, style = MaterialTheme.typography.labelLarge)
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AdapterButton(
+                    label = "Generic REST",
+                    selected = adapter == AdapterType.GENERIC_REST,
+                    onClick = { adapter = AdapterType.GENERIC_REST }
+                )
+                AdapterButton(
+                    label = "ComfyUI",
+                    selected = adapter == AdapterType.COMFY_UI,
+                    onClick = { adapter = AdapterType.COMFY_UI }
+                )
+            }
+
+            OutlinedTextField(
+                value = baseUrl,
+                onValueChange = { baseUrl = it },
+                label = { Text("Base URL (如 http://192.168.1.10:8188)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                label = { Text("API Key（Keystore 加密存储，可留空）") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = authHeader,
+                    onValueChange = { authHeader = it },
+                    label = { Text("Auth Header") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = authPrefix,
+                    onValueChange = { authPrefix = it },
+                    label = { Text("Auth Prefix") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+            }
+
+            OutlinedTextField(
+                value = defaultModel,
+                onValueChange = { defaultModel = it },
+                label = { Text("默认模型") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            if (adapter == AdapterType.COMFY_UI) {
+                OutlinedTextField(
+                    value = workflowJson,
+                    onValueChange = { workflowJson = it },
+                    label = { Text("ComfyUI API 格式 workflow JSON") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                    maxLines = 8
+                )
+            }
+
+            Button(onClick = {
+                viewModel.saveSettings(
+                    ProviderSettings(
+                        adapter = adapter,
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        authHeader = authHeader,
+                        authPrefix = authPrefix,
+                        defaultModel = defaultModel,
+                        workflowJson = workflowJson
+                    )
+                )
+                baseUrl = baseUrl // 保持输入不丢失
+            }) {
+                Text("保存配置")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AdapterButton(label: String, selected: Boolean, onClick: () -> Unit) {
+    if (selected) {
+        Button(onClick = onClick) { Text(label) }
+    } else {
+        OutlinedButton(onClick = onClick) { Text(label) }
+    }
+}
+
+@Composable
+private fun JobItem(job: VideoJob, onOpen: () -> Unit) {
     val label = when (job.status) {
         JobStatus.SUBMITTED -> "已提交"
         JobStatus.QUEUED -> "排队中"
@@ -89,14 +210,19 @@ private fun JobItem(job: VideoJob) {
     val traceLine = job.compatTrace?.let { it.take(180) } ?: ""
 
     Card(colors = CardDefaults.cardColors(), modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(text = job.prompt, style = MaterialTheme.typography.titleMedium)
-            Text("模型: ${job.model}", style = MaterialTheme.typography.bodyMedium)
+            Text("模型: ${job.model}")
             Text(text = "${label} | ${job.id.uppercase(Locale.ROOT)}")
             Text(text = subtitle)
             Text(text = compatLine, style = MaterialTheme.typography.bodySmall)
             if (traceLine.isNotBlank()) {
                 Text(text = "Trace: $traceLine", style = MaterialTheme.typography.bodySmall)
+            }
+            if (job.outputUrl != null) {
+                Button(onClick = onOpen) {
+                    Text("打开结果")
+                }
             }
         }
     }
