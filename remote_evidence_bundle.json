@@ -1,0 +1,20 @@
+{
+  "generated_at": "2026-08-05 10:45:15",
+  "objective": "Remote-only completion with no local->remote data transfer",
+  "artifact": {
+    "apk_path": "/root/workspace/video-forge-android/app/build/outputs/apk/debug/app-debug.apk",
+    "apk_size_bytes": 11534116,
+    "apk_sha256": "9295f541201fb2668ed631ea979378e8449cadbc84ca28c9746242ac6324670b",
+    "apk_exists": true,
+    "remote_verify_script": "/root/workspace/video-forge-android/scripts/verify_remote_debug_apk.sh",
+    "resume_checklist": "/root/workspace/video-forge-android/scripts/manual_resume_acceptance_checklist.md",
+    "evidence_report": "/root/workspace/video-forge-android/remote_completion_report.md",
+    "verify_log": "/root/workspace/video-forge-android/.verify/verify_remote_debug_apk.log"
+  },
+  "verification": {
+    "aapt": "no",
+    "adb_on_remote": "no",
+    "verify_log_exists": true,
+    "completion_state": "remote_ready_pending_device_verify"
+  }
+}

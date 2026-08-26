@@ -1,0 +1,19 @@
+# Gradle / Kotlin build artifacts
+.gradle/
+build/
+.kotlin/
+*.apk
+output-metadata.json
+
+# Local machine config
+local.properties
+*.local
+
+# IDE
+.idea/
+*.iml
+
+# Local verification / evidence artifacts (machine-specific paths)
+.verify/
+remote-apk-evidence/
+tmp-*.txt
