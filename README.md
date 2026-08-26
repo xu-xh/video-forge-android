@@ -37,3 +37,9 @@ The remote source of truth is this directory. With Gradle 8.9 and the Android SD
 /root/gradle-8.9/bin/gradle :app:assembleDebug --no-daemon --console=plain
 
 The debug APK is written to app/build/outputs/apk/debug/app-debug.apk. Open it, select an adapter, enter the base URL and API key, save the profile, then submit a prompt. Generic REST providers must implement the contract in docs/provider-contract.md; ComfyUI additionally requires an API-format workflow JSON.
+
+## Download the debug APK
+
+Latest debug build (v0.1.0): https://github.com/xu-xh/video-forge-android/releases/download/v0.1.0/app-debug.apk
+
+Install on a phone: open the link in the mobile browser, allow installs from unknown sources, then install. See docs/analysis-and-verification.md for verified build/tests and release notes for the acceptance checklist.
